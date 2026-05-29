@@ -71,6 +71,7 @@ function Index() {
   const [yearMin, setYearMin] = useState(1960);
   const [yearMax, setYearMax] = useState(2024);
   const [maxPapers, setMaxPapers] = useState(50);
+  const [apiKey, setApiKey] = useState("");
   const [tab, setTab] = useState<"missed" | "unmatched">("missed");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);

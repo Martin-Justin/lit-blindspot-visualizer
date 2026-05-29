@@ -135,7 +135,7 @@ export async function fetchCitationNetwork(
       `&per-page=${chunk.length}` +
       `&select=id,title,display_name,publication_year,cited_by_count,doi,referenced_works,authorships`;
     try {
-      const r = await politeFetch(url);
+      const r = await politeFetch(url, apiKey);
       const d = (await r.json()) as { results?: OAWork[] };
       for (const w of d.results ?? []) {
         const n = toNode(w, "referenced");

@@ -181,18 +181,13 @@ function Index() {
         return;
       }
       setBibEntries(parsed);
-      let matched = 0;
-      setGraphNodes((prev) => {
-        const next = syncBibToGraph(parsed, prev);
-        matched = next.filter((n) => n.owned).length;
-        return next;
-      });
-      // Defer toast so the matched count above is final.
-      queueMicrotask(() => {
-        toast.success(
-          `Loaded ${parsed.length} papers from bibliography. Matched ${matched} with current graph.`,
-        );
-      });
+      // Compute matches synchronously against the current graph so the toast count is accurate.
+      const { matchedIds, unmatched } = matchBibToGraph(parsed, graphNodes);
+      setUnmatchedBib(unmatched);
+      setGraphNodes((prev) => prev.map((n) => ({ ...n, owned: matchedIds.has(n.id) })));
+      toast.success(
+        `Loaded ${parsed.length} papers from bibliography. Matched ${matchedIds.size} with current graph.`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to read .bib file.");
     }

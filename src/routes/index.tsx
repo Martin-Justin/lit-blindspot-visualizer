@@ -177,11 +177,10 @@ function Index() {
         (stage: string, detail?: string) => setProgress({ stage, detail }),
         fieldId || undefined,
       );
-      // Carry over a (mock) "owned" overlay: re-flag any IDs that were owned in
-      // the previous graph. Real .bib matching lands in Phase 3.
-      const ownedIds = new Set(graphNodes.filter((n) => n.owned).map((n) => n.id));
-      const { nodes, edges } = layoutGraph(graph, ownedIds);
-      setGraphNodes(nodes);
+      const { nodes, edges } = layoutGraph(graph, new Set());
+      // Re-match the loaded bibliography against the new node set.
+      const matchedNodes = syncBibToGraph(bibEntries, nodes);
+      setGraphNodes(matchedNodes);
       setGraphEdges(edges);
       setSource("openalex");
       setZoom(1);

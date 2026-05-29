@@ -312,7 +312,7 @@ function Index() {
                 {bibName && (
                   <div className="mt-2 flex items-center justify-between win-in-thin px-1.5 py-1">
                     <span>📄 {bibName}</span>
-                    <button className="win-btn" onClick={() => setBibName(null)}>Clear</button>
+                    <button className="win-btn" onClick={clearBib}>Clear</button>
                   </div>
                 )}
               </fieldset>

@@ -527,7 +527,7 @@ function Index() {
               {loading ? `⌛ ${progress.stage}${progress.detail ? " · " + progress.detail : ""}` : error ? "✕ Error — see dialog." : "Ready."}
             </StatusCell>
             <StatusCell>Bib matches: {owned.length}</StatusCell>
-            <StatusCell>Unmatched: {mockUnmatched.length}</StatusCell>
+            <StatusCell>Unmatched: {unmatchedBib.length}</StatusCell>
             <StatusCell>OpenAlex: {loading ? "● querying" : error ? "● error" : source === "openalex" ? "● live" : "○ mock"}</StatusCell>
             <StatusCell>Zoom: {Math.round(zoom * 100)}%</StatusCell>
           </div>

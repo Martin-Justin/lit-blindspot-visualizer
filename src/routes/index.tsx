@@ -87,6 +87,7 @@ function Index() {
   useEffect(() => {
     setQuery(buildQuery(keywords, joiner));
   }, [keywords, joiner]);
+  const [theme, setTheme] = useState<"retro" | "terminal">("retro");
   const [yearMin, setYearMin] = useState(1960);
   const [yearMax, setYearMax] = useState(2024);
   const [maxPapers, setMaxPapers] = useState(50);
@@ -240,7 +241,10 @@ function Index() {
   );
 
   return (
-    <div className="min-h-screen w-full p-2 sm:p-4" style={{ background: "#008080" }}>
+    <div
+      className={`min-h-screen w-full p-2 sm:p-4 ${theme === "terminal" ? "theme-terminal" : ""}`}
+      style={{ background: theme === "terminal" ? "#07090d" : "#008080" }}
+    >
       <div className="win-out mx-auto" style={{ maxWidth: 1400, padding: 2 }}>
         {/* Title bar */}
         <div className="win-titlebar">
@@ -258,10 +262,18 @@ function Index() {
         </div>
 
         {/* Menu bar */}
-        <div className="flex bg-[#c0c0c0] border-b border-[#808080]" style={{ borderTop: "1px solid #ffffff" }}>
+        <div className="flex items-center bg-[#c0c0c0] border-b border-[#808080]" style={{ borderTop: "1px solid #ffffff" }}>
           {["File", "Edit", "Workspace", "Help"].map((m) => (
             <div key={m} className="win-menubtn"><u>{m[0]}</u>{m.slice(1)}</div>
           ))}
+          <button
+            className="win-btn ml-auto mr-1"
+            style={{ fontSize: 10 }}
+            onClick={() => setTheme(theme === "retro" ? "terminal" : "retro")}
+            title="Toggle theme"
+          >
+            {theme === "retro" ? "▮ Terminal" : "▮ Retro"}
+          </button>
         </div>
 
         {/* Body */}

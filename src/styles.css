@@ -206,4 +206,150 @@
   .win-scroll::-webkit-scrollbar-corner {
     background: #c0c0c0;
   }
+
+  /* ============================================================
+     THEME: Dark Data Terminal
+     Scoped overrides applied when ancestor has .theme-terminal.
+     Uses !important to beat the many inline style="background:..." attributes
+     that the retro layout sets directly on elements.
+     ============================================================ */
+  .theme-terminal {
+    --term-bg: #07090d;
+    --term-panel: #0d1219;
+    --term-panel-2: #121925;
+    --term-border: #1f2a3a;
+    --term-border-strong: #2d3e57;
+    --term-text: #c9d1d9;
+    --term-text-dim: #6b7c93;
+    --term-accent: #00ff9c;
+    --term-accent-dim: #008f57;
+    background: var(--term-bg) !important;
+    color: var(--term-text) !important;
+    font-family: "JetBrains Mono", "SF Mono", "Menlo", "Consolas", monospace !important;
+    -webkit-font-smoothing: antialiased;
+  }
+  .theme-terminal input,
+  .theme-terminal select,
+  .theme-terminal button,
+  .theme-terminal textarea { font-family: inherit !important; }
+
+  .theme-terminal .win-out,
+  .theme-terminal .win-in,
+  .theme-terminal .win-in-thin {
+    background: var(--term-panel) !important;
+    border: 1px solid var(--term-border) !important;
+    box-shadow: none !important;
+    color: var(--term-text) !important;
+  }
+  .theme-terminal .win-in,
+  .theme-terminal .win-input { background: var(--term-bg) !important; }
+
+  .theme-terminal .win-titlebar {
+    background: var(--term-panel-2) !important;
+    color: var(--term-accent) !important;
+    border-bottom: 1px solid var(--term-accent-dim);
+    font-weight: 500 !important;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    font-size: 11px !important;
+    padding: 4px 8px !important;
+  }
+  .theme-terminal .win-titlebar.inactive {
+    background: var(--term-panel) !important;
+    color: var(--term-text-dim) !important;
+    border-bottom: 1px solid var(--term-border);
+  }
+
+  .theme-terminal .bg-\[\#c0c0c0\] {
+    background: var(--term-panel) !important;
+    color: var(--term-text) !important;
+  }
+  .theme-terminal .border-\[\#808080\] { border-color: var(--term-border) !important; }
+  .theme-terminal .win-menubtn { color: var(--term-text-dim) !important; }
+  .theme-terminal .win-menubtn:hover {
+    background: var(--term-accent) !important;
+    color: var(--term-bg) !important;
+  }
+
+  .theme-terminal .win-btn {
+    background: transparent !important;
+    color: var(--term-text) !important;
+    border: 1px solid var(--term-border-strong) !important;
+    box-shadow: none !important;
+    padding: 3px 10px !important;
+    border-radius: 2px;
+    transition: background 80ms linear, color 80ms linear, border-color 80ms linear;
+  }
+  .theme-terminal .win-btn:hover {
+    border-color: var(--term-accent) !important;
+    color: var(--term-accent) !important;
+  }
+  .theme-terminal .win-btn:active,
+  .theme-terminal .win-btn[data-active="true"] {
+    background: var(--term-accent) !important;
+    color: var(--term-bg) !important;
+    border-color: var(--term-accent) !important;
+    padding: 3px 10px !important;
+  }
+
+  .theme-terminal .win-input {
+    background: var(--term-bg) !important;
+    color: var(--term-accent) !important;
+    border: 1px solid var(--term-border-strong) !important;
+    box-shadow: none !important;
+    border-radius: 2px;
+    caret-color: var(--term-accent);
+  }
+  .theme-terminal .win-input:focus {
+    border-color: var(--term-accent) !important;
+    outline: 1px solid var(--term-accent-dim) !important;
+  }
+
+  .theme-terminal .win-group {
+    border: 1px solid var(--term-border) !important;
+    box-shadow: none !important;
+    background: var(--term-panel) !important;
+  }
+  .theme-terminal .win-group > legend,
+  .theme-terminal .win-group > .win-group-label {
+    background: var(--term-panel) !important;
+    color: var(--term-text-dim) !important;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-size: 10px !important;
+  }
+
+  .theme-terminal .win-tab {
+    background: transparent !important;
+    color: var(--term-text-dim) !important;
+    border: 1px solid var(--term-border) !important;
+    border-bottom-color: transparent !important;
+    box-shadow: none !important;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .theme-terminal .win-tab[data-active="true"] {
+    background: var(--term-panel) !important;
+    color: var(--term-accent) !important;
+    border-color: var(--term-accent-dim) !important;
+  }
+
+  .theme-terminal .text-gray-600,
+  .theme-terminal .text-gray-500 { color: var(--term-text-dim) !important; }
+
+  .theme-terminal .win-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+  .theme-terminal .win-scroll::-webkit-scrollbar-track { background: var(--term-panel) !important; }
+  .theme-terminal .win-scroll::-webkit-scrollbar-thumb {
+    background: var(--term-border-strong) !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0;
+  }
+  .theme-terminal .win-scroll::-webkit-scrollbar-thumb:hover {
+    background: var(--term-accent-dim) !important;
+  }
+
+  .theme-terminal .win-titlebar:not(.inactive) span {
+    text-shadow: 0 0 8px color-mix(in oklab, var(--term-accent) 50%, transparent);
+  }
 }

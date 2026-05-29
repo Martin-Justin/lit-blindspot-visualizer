@@ -91,6 +91,11 @@ function Index() {
   const [graphEdges, setGraphEdges] = useState<Edge[]>(mockEdges);
   const [source, setSource] = useState<"mock" | "openalex">("mock");
 
+  // Display filters (Phase 5).
+  const [minCitations, setMinCitations] = useState(0);
+  const [hideRead, setHideRead] = useState(false);
+  const [showIsolated, setShowIsolated] = useState(true);
+
   // Fetch lifecycle
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<{ stage: string; detail?: string }>({ stage: "" });
@@ -103,13 +108,36 @@ function Index() {
     return () => { document.body.style.cursor = ""; };
   }, [loading]);
 
-  const owned = graphNodes.filter((n) => n.owned);
-  const missed = useMemo(
-    () => graphNodes.filter((n) => !n.owned).sort((a, b) => b.citations - a.citations),
+  const maxCitations = useMemo(
+    () => graphNodes.reduce((m, n) => Math.max(m, n.citations), 0),
     [graphNodes],
   );
+
+  // Apply the display filters to produce the rendered subgraph.
+  const { displayNodes, displayEdges } = useMemo(() => {
+    const keep = new Set<string>();
+    for (const n of graphNodes) {
+      if (n.citations < minCitations) continue;
+      if (hideRead && n.owned) continue;
+      keep.add(n.id);
+    }
+    const edges = graphEdges.filter((e) => keep.has(e.source) && keep.has(e.target));
+    let nodes = graphNodes.filter((n) => keep.has(n.id));
+    if (!showIsolated) {
+      const connected = new Set<string>();
+      for (const e of edges) { connected.add(e.source); connected.add(e.target); }
+      nodes = nodes.filter((n) => connected.has(n.id));
+    }
+    return { displayNodes: nodes, displayEdges: edges };
+  }, [graphNodes, graphEdges, minCitations, hideRead, showIsolated]);
+
+  const owned = displayNodes.filter((n) => n.owned);
+  const missed = useMemo(
+    () => displayNodes.filter((n) => !n.owned).sort((a, b) => b.citations - a.citations),
+    [displayNodes],
+  );
   const topMissed = missed[0];
-  const coverage = graphNodes.length ? Math.round((owned.length / graphNodes.length) * 100) : 0;
+  const coverage = displayNodes.length ? Math.round((owned.length / displayNodes.length) * 100) : 0;
 
   /** Re-match a bib set against a node set and apply owned/unmatched state. */
   const syncBibToGraph = (bib: BibPaper[], nodes: PaperNode[]): PaperNode[] => {

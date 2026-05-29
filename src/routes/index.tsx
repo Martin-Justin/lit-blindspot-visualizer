@@ -88,6 +88,7 @@ function Index() {
     setQuery(buildQuery(keywords, joiner));
   }, [keywords, joiner]);
   const [theme, setTheme] = useState<"retro" | "terminal">("retro");
+  const [helpOpen, setHelpOpen] = useState<boolean>(false);
   const [yearMin, setYearMin] = useState(1960);
   const [yearMax, setYearMax] = useState(2024);
   const [maxPapers, setMaxPapers] = useState(50);

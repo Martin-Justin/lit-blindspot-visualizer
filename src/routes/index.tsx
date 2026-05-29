@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NetworkCanvas } from "@/components/NetworkCanvas";
 import { mockNodes, mockEdges, mockUnmatched, type PaperNode, type Edge } from "@/lib/mockData";
-import { fetchCitationNetwork, type OAGraph } from "@/services/openalex";
+import { fetchCitationNetwork, OPENALEX_FIELDS, type OAGraph } from "@/services/openalex";
 
 export const Route = createFileRoute("/")({
   head: () => ({

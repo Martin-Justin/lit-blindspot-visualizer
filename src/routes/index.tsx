@@ -366,8 +366,8 @@ function Index() {
               </div>
             </section>
 
-            {/* RIGHT ANALYTICAL HUB */}
-            <aside className="win-out p-1.5 flex flex-col gap-2" style={{ background: "#c0c0c0" }}>
+            {/* BOTTOM ANALYTICAL HUB (spans full width) */}
+            <aside className="win-out p-1.5 flex flex-col gap-2" style={{ background: "#c0c0c0", gridColumn: "1 / -1" }}>
               <div className="win-titlebar inactive">
                 <span>Analytical Hub</span>
               </div>

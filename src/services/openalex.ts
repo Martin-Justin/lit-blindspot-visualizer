@@ -73,10 +73,12 @@ export async function fetchCitationNetwork(
   endYear?: number,
   apiKey?: string,
   onProgress?: ProgressFn,
+  fieldId?: string, // OpenAlex field id (e.g. "17" for Computer Science), filters by primary_topic.field
 ): Promise<OAGraph> {
   if (!query.trim()) throw new Error("Please enter a search query.");
 
-  const perPage = Math.max(10, Math.min(200, maxPapers));
+  const cap = Math.max(10, Math.min(200, maxPapers));
+  const perPage = cap;
 
   // ---------- Stage 1: Seeds ----------
   onProgress?.("Searching OpenAlex…", `Top ${perPage} works for "${query}"`);
@@ -84,6 +86,7 @@ export async function fetchCitationNetwork(
   const filters: string[] = [];
   if (startYear) filters.push(`from_publication_date:${startYear}-01-01`);
   if (endYear) filters.push(`to_publication_date:${endYear}-12-31`);
+  if (fieldId) filters.push(`primary_topic.field.id:fields/${fieldId}`);
   const filterParam = filters.length ? `&filter=${filters.join(",")}` : "";
 
   const seedUrl =

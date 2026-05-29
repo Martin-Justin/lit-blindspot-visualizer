@@ -69,7 +69,24 @@ function layoutGraph(graph: OAGraph, ownedIds: Set<string>): { nodes: PaperNode[
 }
 
 function Index() {
+  const [keywords, setKeywords] = useState<string[]>(["Epistemic Bias in Science"]);
+  const [joiner, setJoiner] = useState<"AND" | "OR">("AND");
   const [query, setQuery] = useState("Epistemic Bias in Science");
+
+  // Build OpenAlex search string from keyword chips. Quotes multi-word terms,
+  // wraps each term in parentheses, and joins with the chosen boolean operator.
+  // Parentheses are natively supported by OpenAlex, e.g. ("a" OR "b") AND "c".
+  function buildQuery(terms: string[], op: "AND" | "OR"): string {
+    const cleaned = terms.map((t) => t.trim()).filter(Boolean);
+    if (cleaned.length === 0) return "";
+    if (cleaned.length === 1) return cleaned[0];
+    return cleaned.map((t) => (/\s/.test(t) ? `("${t.replace(/"/g, "")}")` : `(${t})`)).join(` ${op} `);
+  }
+
+  // Keep `query` in sync with the chip builder so the raw input still reflects what gets sent.
+  useEffect(() => {
+    setQuery(buildQuery(keywords, joiner));
+  }, [keywords, joiner]);
   const [yearMin, setYearMin] = useState(1960);
   const [yearMax, setYearMax] = useState(2024);
   const [maxPapers, setMaxPapers] = useState(50);

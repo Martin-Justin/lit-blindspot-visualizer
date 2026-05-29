@@ -38,8 +38,7 @@ export function NetworkCanvas({ nodes, edges, selectedId, onSelect, zoom, resetS
     let net: any;
 
     (async () => {
-      // @ts-expect-error - vis-network ESM bundle has no bundled types for this subpath
-      const vis = await import("vis-network/standalone/esm/vis-network");
+      const vis = await import("vis-network/standalone");
       if (disposed || !containerRef.current) return;
       const { Network, DataSet } = vis as any;
 

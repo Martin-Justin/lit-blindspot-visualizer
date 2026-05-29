@@ -62,7 +62,6 @@ export function NetworkCanvas({ nodes, edges, selectedId, onSelect, zoom, resetS
     let disposed = false;
 
     (async () => {
-      // @ts-expect-error - subpath has no bundled .d.ts
       const vis = await import("vis-network/standalone/esm/vis-network.mjs");
       if (disposed || !containerRef.current) return;
       const { Network, DataSet } = vis as any;

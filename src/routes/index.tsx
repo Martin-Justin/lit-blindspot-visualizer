@@ -181,18 +181,13 @@ function Index() {
         return;
       }
       setBibEntries(parsed);
-      let matched = 0;
-      setGraphNodes((prev) => {
-        const next = syncBibToGraph(parsed, prev);
-        matched = next.filter((n) => n.owned).length;
-        return next;
-      });
-      // Defer toast so the matched count above is final.
-      queueMicrotask(() => {
-        toast.success(
-          `Loaded ${parsed.length} papers from bibliography. Matched ${matched} with current graph.`,
-        );
-      });
+      // Compute matches synchronously against the current graph so the toast count is accurate.
+      const { matchedIds, unmatched } = matchBibToGraph(parsed, graphNodes);
+      setUnmatchedBib(unmatched);
+      setGraphNodes((prev) => prev.map((n) => ({ ...n, owned: matchedIds.has(n.id) })));
+      toast.success(
+        `Loaded ${parsed.length} papers from bibliography. Matched ${matchedIds.size} with current graph.`,
+      );
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to read .bib file.");
     }
@@ -337,12 +332,25 @@ function Index() {
                   <span>—</span>
                   <input type="number" className="win-input" style={{ width: 60 }} value={yearMax} onChange={(e) => setYearMax(+e.target.value)} disabled={loading} />
                 </div>
-                <label className="block mt-2 mb-1">Max papers:</label>
-                <select className="win-input w-full" value={maxPapers} onChange={(e) => setMaxPapers(+e.target.value)} disabled={loading}>
-                  <option value={50}>50</option>
-                  <option value={100}>100</option>
-                  <option value={200}>200</option>
-                </select>
+                <label className="block mt-2 mb-1">Max papers (10–150):</label>
+                <input
+                  type="number"
+                  min={10}
+                  max={150}
+                  step={1}
+                  className="win-input w-full"
+                  value={maxPapers}
+                  onChange={(e) => {
+                    const raw = parseInt(e.target.value, 10);
+                    if (Number.isNaN(raw)) return;
+                    setMaxPapers(Math.max(10, Math.min(150, raw)));
+                  }}
+                  onBlur={(e) => {
+                    const raw = parseInt(e.target.value, 10);
+                    setMaxPapers(Number.isNaN(raw) ? 50 : Math.max(10, Math.min(150, raw)));
+                  }}
+                  disabled={loading}
+                />
                 <label className="block mt-2 mb-1">Field of research:</label>
                 <select className="win-input w-full" value={fieldId} onChange={(e) => setFieldId(e.target.value)} disabled={loading}>
                   {OPENALEX_FIELDS.map((f) => (

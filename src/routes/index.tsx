@@ -307,6 +307,7 @@ function Index() {
                     selectedId={selectedId}
                     zoom={zoom}
                     resetSignal={resetSignal}
+                    physics={physics}
                   />
 
                   {/* Loading overlay */}

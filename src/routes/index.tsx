@@ -558,17 +558,37 @@ function Index() {
                           >
                             <div className="font-bold leading-tight">{p.title}</div>
                             <div>{p.author} · {p.year} · {formatNum(p.citations)} cit.</div>
-                            <div className="flex gap-1 mt-1">
+                            <div className="flex flex-wrap gap-1 mt-1">
                               <button
                                 className="win-btn"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const target = p.doi
                                     ? `https://openalex.org/works?filter=doi:${encodeURIComponent(p.doi)}`
-                                    : `https://openalex.org/W${p.id.replace(/^W/, "")}`;
+                                    : `https://openalex.org/${p.id}`;
                                   window.open(target, "_blank", "noopener");
                                 }}
-                              >View on OpenAlex</button>
+                              >OpenAlex details</button>
+                              <button
+                                className="win-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const q = p.doi || `${p.title} ${p.author}`;
+                                  window.open(
+                                    `https://scholar.google.com/scholar?q=${encodeURIComponent(q)}`,
+                                    "_blank",
+                                    "noopener",
+                                  );
+                                }}
+                              >Google Scholar</button>
+                              <button
+                                className="win-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard?.writeText(toBibtex(p));
+                                  toast.success("BibTeX entry copied to clipboard.");
+                                }}
+                              >Copy BibTeX</button>
                               <button
                                 className="win-btn"
                                 onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(p.doi || p.id); }}

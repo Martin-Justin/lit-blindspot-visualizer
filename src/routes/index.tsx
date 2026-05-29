@@ -125,6 +125,7 @@ function Index() {
         yearMax || undefined,
         apiKey || undefined,
         (stage: string, detail?: string) => setProgress({ stage, detail }),
+        fieldId || undefined,
       );
       // Carry over a (mock) "owned" overlay: re-flag any IDs that were owned in
       // the previous graph. Real .bib matching lands in Phase 3.

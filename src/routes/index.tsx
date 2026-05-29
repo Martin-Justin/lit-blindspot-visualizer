@@ -488,8 +488,25 @@ function Index() {
 
             {/* BOTTOM ANALYTICAL HUB (spans full width) */}
             <aside className="win-out p-1.5 flex flex-col gap-2" style={{ background: "#c0c0c0", gridColumn: "1 / -1" }}>
-              <div className="win-titlebar inactive">
+              <div className="win-titlebar inactive flex items-center justify-between">
                 <span>Analytical Hub</span>
+                <button
+                  className="win-btn"
+                  style={{ fontSize: 11, padding: "0 6px" }}
+                  disabled={missed.length === 0}
+                  onClick={() => {
+                    const header = "rank,title,author,year,citations,doi,openalex_id,openalex_url";
+                    const rows = missed.map((p, i) =>
+                      [i + 1, p.title, p.author, p.year, p.citations, p.doi, p.id, `https://openalex.org/${p.id}`]
+                        .map(csvEscape).join(","),
+                    );
+                    const csv = [header, ...rows].join("\n");
+                    const stamp = new Date().toISOString().slice(0, 10);
+                    const safeQuery = (query || "graph").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+                    downloadFile(`literature-gap-report_${safeQuery}_${stamp}.csv`, "text/csv;charset=utf-8", csv);
+                    toast.success(`Exported ${missed.length} missed hub papers.`);
+                  }}
+                >↧ Export Gap Report (CSV)</button>
               </div>
 
               <StatCard label="Network Coverage Score">

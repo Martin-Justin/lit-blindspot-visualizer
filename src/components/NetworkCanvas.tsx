@@ -21,55 +21,71 @@ function escapeHtml(s: string) {
   return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" } as Record<string, string>)[c]);
 }
 
+// Build the vis-network node spec for a paper. Selection styling is layered on
+// top via DataSet.update so positions never reset on a click.
+function buildNode(n: PaperNode, isSel: boolean) {
+  const fill = n.owned ? "#00ff00" : "#c0c0c0";
+  const border = isSel ? "#000080" : "#000000";
+  return {
+    id: n.id,
+    label: n.title.length > 36 ? n.title.slice(0, 34) + "…" : n.title,
+    title: `${escapeHtml(n.title)}\n${escapeHtml(n.author)} · ${n.year}\nCitations: ${n.citations.toLocaleString("en-US")}`,
+    size: nodeSize(n.citations),
+    color: {
+      background: fill,
+      border,
+      highlight: { background: fill, border: "#000080" },
+      hover: { background: fill, border: "#000080" },
+    },
+    borderWidth: isSel ? 3 : 1.5,
+    borderWidthSelected: 3,
+    shapeProperties: { borderDashes: isSel ? [2, 2] : false },
+  };
+}
+
 export function NetworkCanvas({ nodes, edges, selectedId, onSelect, zoom, resetSignal, physics }: Props) {
   const containerRef = useRef<HTMLDivElement | null>(null);
-  // Hold the live network + datasets across renders without re-mounting.
   const stateRef = useRef<{
     network: any;
     nodesDS: any;
     edgesDS: any;
-    DataSet: any;
+    idsKey: string;
+    selectedId: string | null;
   } | null>(null);
+  // Keep latest values accessible inside async init without re-running.
+  const latest = useRef({ nodes, edges, selectedId });
+  latest.current = { nodes, edges, selectedId };
 
   // Mount the vis-network instance once on the client.
   useEffect(() => {
     if (typeof window === "undefined" || !containerRef.current) return;
     let disposed = false;
-    let net: any;
 
     (async () => {
-      const vis = await import("vis-network/peer");
-      const visData = await import("vis-data/peer");
+      const vis = await import("vis-network/standalone/esm/vis-network.mjs");
       if (disposed || !containerRef.current) return;
-      const { Network } = vis as any;
-      const { DataSet } = visData as any;
+      const { Network, DataSet } = vis as any;
 
       const nodesDS = new DataSet([]);
       const edgesDS = new DataSet([]);
 
-      net = new Network(
+      const net = new Network(
         containerRef.current,
         { nodes: nodesDS, edges: edgesDS },
         {
           autoResize: true,
-          interaction: {
-            hover: true,
-            tooltipDelay: 120,
-            dragNodes: true,
-            zoomView: true,
-          },
+          interaction: { hover: true, tooltipDelay: 120, dragNodes: true, zoomView: true },
           physics: {
             enabled: true,
             solver: "barnesHut",
             barnesHut: {
-              gravitationalConstant: -2000,
-              centralGravity: 0.3,
-              springLength: 95,
+              gravitationalConstant: -3200,
+              springLength: 120,
               springConstant: 0.04,
               damping: 0.35,
               avoidOverlap: 0.2,
             },
-            stabilization: { enabled: true, iterations: 250, fit: true },
+            stabilization: { enabled: true, iterations: 400, fit: true },
           },
           nodes: {
             shape: "dot",
@@ -98,95 +114,98 @@ export function NetworkCanvas({ nodes, edges, selectedId, onSelect, zoom, resetS
         onSelect(id ?? null);
       });
 
-      // Auto-freeze physics once the graph settles, to save CPU cycles.
+      // When stabilization completes, freeze physics so the layout stays put.
       net.on("stabilizationIterationsDone", () => {
         net.setOptions({ physics: { enabled: false } });
       });
 
-      stateRef.current = { network: net, nodesDS, edgesDS, DataSet };
+      // Seed initial data + stabilize once.
+      const { nodes: n0, edges: e0, selectedId: sel0 } = latest.current;
+      nodesDS.add(n0.map((n) => buildNode(n, n.id === sel0)));
+      edgesDS.add(e0.map((e, i) => ({ id: `e${i}`, from: e.source, to: e.target })));
+      stateRef.current = {
+        network: net,
+        nodesDS,
+        edgesDS,
+        idsKey: n0.map((n) => n.id).sort().join("|"),
+        selectedId: sel0,
+      };
+      if (n0.length > 0) net.stabilize();
     })();
 
     return () => {
       disposed = true;
-      try {
-        stateRef.current?.network?.destroy();
-      } catch {
-        /* noop */
-      }
+      try { stateRef.current?.network?.destroy(); } catch { /* noop */ }
       stateRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Sync graph data whenever nodes/edges/selection change.
+  // Re-seed only when the actual node SET changes (not on selection).
   useEffect(() => {
     const s = stateRef.current;
     if (!s) return;
-
-    const visNodes = nodes.map((n) => {
-      const isSel = n.id === selectedId;
-      const fill = n.owned ? "#00ff00" : "#c0c0c0";
-      const border = isSel ? "#000080" : "#000000";
-      return {
-        id: n.id,
-        label: n.title.length > 36 ? n.title.slice(0, 34) + "…" : n.title,
-        title: `${escapeHtml(n.title)}\n${escapeHtml(n.author)} · ${n.year}\nCitations: ${n.citations.toLocaleString("en-US")}`,
-        size: nodeSize(n.citations),
-        color: {
-          background: fill,
-          border,
-          highlight: { background: fill, border: "#000080" },
-          hover: { background: fill, border: "#000080" },
-        },
-        borderWidth: isSel ? 3 : 1.5,
-        borderWidthSelected: 3,
-        shapeProperties: { borderDashes: isSel ? [2, 2] : false },
-      };
-    });
-
-    const visEdges = edges.map((e, i) => ({ id: `e${i}`, from: e.source, to: e.target }));
-
-    // Detect a graph "load" (node-set identity changed) so we can re-stabilize.
     const idsKey = nodes.map((n) => n.id).sort().join("|");
-    const prevKey = (s as any)._idsKey as string | undefined;
-    const graphChanged = idsKey !== prevKey;
-    (s as any)._idsKey = idsKey;
-
+    if (idsKey === s.idsKey) {
+      // Same nodes — refresh sizes/labels in place, keep positions.
+      s.nodesDS.update(nodes.map((n) => buildNode(n, n.id === s.selectedId)));
+      return;
+    }
+    s.idsKey = idsKey;
     s.nodesDS.clear();
-    s.nodesDS.add(visNodes);
-    s.edgesDS.clear();
-    s.edgesDS.add(visEdges);
-
-    if (graphChanged && visNodes.length > 0) {
-      // Stabilize the freshly loaded graph, then freeze physics to save CPU.
+    s.nodesDS.add(nodes.map((n) => buildNode(n, n.id === s.selectedId)));
+    if (nodes.length > 0) {
       try {
         s.network.setOptions({ physics: { enabled: true } });
         s.network.stabilize();
       } catch { /* noop */ }
     }
+  }, [nodes]);
 
+  // Edges sync.
+  useEffect(() => {
+    const s = stateRef.current;
+    if (!s) return;
+    s.edgesDS.clear();
+    s.edgesDS.add(edges.map((e, i) => ({ id: `e${i}`, from: e.source, to: e.target })));
+  }, [edges]);
+
+  // Selection — restyle prev + new node in place; never touch positions.
+  useEffect(() => {
+    const s = stateRef.current;
+    if (!s) return;
+    const prev = s.selectedId;
+    const updates: any[] = [];
+    if (prev && prev !== selectedId) {
+      const p = nodes.find((n) => n.id === prev);
+      if (p) updates.push(buildNode(p, false));
+    }
     if (selectedId) {
+      const n = nodes.find((x) => x.id === selectedId);
+      if (n) updates.push(buildNode(n, true));
       try { s.network.selectNodes([selectedId], false); } catch { /* noop */ }
     } else {
       try { s.network.unselectAll(); } catch { /* noop */ }
     }
-  }, [nodes, edges, selectedId]);
+    if (updates.length) s.nodesDS.update(updates);
+    s.selectedId = selectedId;
+  }, [selectedId, nodes]);
 
-  // Physics toggle.
+  // Physics toggle (manual override).
   useEffect(() => {
     const s = stateRef.current;
     if (!s) return;
     s.network.setOptions({ physics: { enabled: physics } });
   }, [physics]);
 
-  // External zoom control.
+  // Zoom control.
   useEffect(() => {
     const s = stateRef.current;
     if (!s) return;
     try { s.network.moveTo({ scale: zoom, animation: { duration: 180, easingFunction: "easeInOutQuad" } }); } catch { /* noop */ }
   }, [zoom]);
 
-  // Fit-to-screen via resetSignal.
+  // Fit-to-screen.
   useEffect(() => {
     const s = stateRef.current;
     if (!s || resetSignal === 0) return;
@@ -197,14 +216,8 @@ export function NetworkCanvas({ nodes, edges, selectedId, onSelect, zoom, resetS
     <>
       <div
         ref={containerRef}
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "#ffffff",
-          imageRendering: "pixelated",
-        }}
+        style={{ position: "absolute", inset: 0, background: "#ffffff" }}
       />
-      {/* Retro tooltip skin — vis-network injects .vis-tooltip into <body>. */}
       <style>{`
         div.vis-tooltip {
           background: #ffffe1 !important;

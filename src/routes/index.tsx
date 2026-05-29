@@ -386,8 +386,8 @@ function Index() {
                 {/* Sunken canvas frame */}
                 <div className="win-in h-full relative" style={{ minHeight: 540, cursor: loading ? "wait" : undefined }}>
                   <NetworkCanvas
-                    nodes={graphNodes}
-                    edges={graphEdges}
+                    nodes={displayNodes}
+                    edges={displayEdges}
                     onSelect={setSelectedId}
                     selectedId={selectedId}
                     zoom={zoom}

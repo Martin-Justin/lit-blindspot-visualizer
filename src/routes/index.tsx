@@ -350,7 +350,7 @@ function Index() {
             <section className="win-out p-1.5 flex flex-col" style={{ background: "#c0c0c0", minHeight: 600 }}>
               <div className="win-titlebar" style={{ marginBottom: 6 }}>
                 <span>Citation Network — {query || "(no query)"} {source === "openalex" ? "· OpenAlex" : "· mock"}</span>
-                <span className="text-[11px] font-normal">{graphNodes.length} nodes · {graphEdges.length} edges</span>
+                <span className="text-[11px] font-normal">{displayNodes.length} / {graphNodes.length} nodes · {displayEdges.length} edges</span>
               </div>
 
               <div className="relative flex-1">

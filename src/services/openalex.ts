@@ -1,10 +1,6 @@
 // OpenAlex citation network service.
-// Browsers strip the User-Agent header, but OpenAlex's "polite pool"
-// also accepts a `mailto` query param — we send both for robustness.
 
 const BASE_URL = "https://api.openalex.org/works";
-const MAILTO = "your-email-placeholder@domain.com";
-const POLITE_UA = "LiteratureBlindSpotsProject/1.0 (mailto:your-email-placeholder@domain.com)";
 
 export type OAGraphNode = {
   id: string;
@@ -28,17 +24,10 @@ export type ProgressFn = (stage: string, detail?: string) => void;
 
 const stripPrefix = (id: string) => id.replace("https://openalex.org/", "");
 
-function buildPolite(url: string): string {
-  return url.includes("?") ? `${url}&mailto=${MAILTO}` : `${url}?mailto=${MAILTO}`;
-}
 
 async function politeFetch(url: string, apiKey?: string): Promise<Response> {
   const urlWithKey = apiKey ? `${url}${url.includes("?") ? "&" : "?"}api_key=${encodeURIComponent(apiKey)}` : url;
-  const res = await fetch(urlWithKey, {
-    headers: {
-      Accept: "application/json",
-    },
-  });
+  const res = await fetch(urlWithKey);
   if (!res.ok) {
     throw new Error(`OpenAlex request failed (${res.status} ${res.statusText})`);
   }

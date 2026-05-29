@@ -311,6 +311,41 @@ function Index() {
                 <div className="mt-1 text-[#000080]">Optional — adds api_key to requests</div>
               </fieldset>
 
+              <fieldset className="win-group mt-3" style={fieldsetStyle}>
+                <legend className="px-1 text-[11px]">Display Filters</legend>
+                <label className="block mb-1">
+                  Min. citations: <b style={{ fontFamily: "Courier New, monospace" }}>{formatNum(minCitations)}</b>
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(10, maxCitations)}
+                  step={Math.max(1, Math.round(maxCitations / 100))}
+                  value={Math.min(minCitations, maxCitations)}
+                  onChange={(e) => setMinCitations(+e.target.value)}
+                  className="w-full"
+                  style={{ accentColor: "#000080" }}
+                />
+                <div className="flex justify-between text-[10px] text-[#808080]">
+                  <span>0</span><span>{formatNum(maxCitations)}</span>
+                </div>
+                <label className="flex items-center gap-1.5 mt-2 cursor-pointer">
+                  <input type="checkbox" checked={hideRead} onChange={(e) => setHideRead(e.target.checked)} />
+                  <span>Hide read papers (owned)</span>
+                </label>
+                <label className="flex items-center gap-1.5 mt-1 cursor-pointer">
+                  <input type="checkbox" checked={showIsolated} onChange={(e) => setShowIsolated(e.target.checked)} />
+                  <span>Show isolated nodes</span>
+                </label>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    className="win-btn"
+                    onClick={() => { setMinCitations(0); setHideRead(false); setShowIsolated(true); }}
+                  >Reset filters</button>
+                </div>
+              </fieldset>
+
+
               <fieldset className="win-group" style={fieldsetStyle}>
                 <legend className="px-1 text-[11px]">Bibliography (.bib)</legend>
                 <div

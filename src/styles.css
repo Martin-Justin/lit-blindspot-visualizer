@@ -352,4 +352,12 @@
   .theme-terminal .win-titlebar:not(.inactive) span {
     text-shadow: 0 0 8px color-mix(in oklab, var(--term-accent) 50%, transparent);
   }
+
+  /* Make text inside white panels readable on dark backgrounds.
+     Inline color="#000" / "#000080" loses to !important here. */
+  .theme-terminal .win-in,
+  .theme-terminal .win-in * { color: var(--term-text) !important; }
+  .theme-terminal .text-\[\#000\],
+  .theme-terminal .text-\[\#000080\] { color: var(--term-accent) !important; }
+  .theme-terminal .text-\[\#808080\] { color: var(--term-text-dim) !important; }
 }

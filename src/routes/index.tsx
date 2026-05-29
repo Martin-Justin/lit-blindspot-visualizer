@@ -353,12 +353,18 @@ function Index() {
                   style={{
                     minHeight: 80,
                     background: hoverDrop ? "#dfdfdf" : "#ffffff",
-                    backgroundImage:
-                      "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,0.04) 6px 7px)",
+                    backgroundImage: hoverDrop
+                      ? "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,128,0.18) 6px 7px)"
+                      : "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,0.04) 6px 7px)",
                     display: "grid",
                     placeItems: "center",
                     padding: 8,
                     cursor: "pointer",
+                    outline: hoverDrop ? "2px dashed #000080" : "1px dashed #808080",
+                    outlineOffset: hoverDrop ? -4 : -2,
+                    boxShadow: hoverDrop
+                      ? "inset 2px 2px 0 #808080, inset -2px -2px 0 #ffffff"
+                      : "none",
                   }}
                   onDragOver={(e) => { e.preventDefault(); setHoverDrop(true); }}
                   onDragLeave={() => setHoverDrop(false)}
@@ -367,7 +373,7 @@ function Index() {
                 >
                   <div className="text-center">
                     <div style={{ fontFamily: "Courier New, monospace", fontSize: 18 }}>[ .BIB ]</div>
-                    <div className="mt-1">Drop Zotero/Mendeley file here</div>
+                    <div className="mt-1">{hoverDrop ? "Release to load…" : "Drop Zotero/Mendeley file here"}</div>
                     <div className="text-[#808080]">or click to browse…</div>
                   </div>
                 </div>

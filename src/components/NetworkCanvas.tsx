@@ -38,9 +38,11 @@ export function NetworkCanvas({ nodes, edges, selectedId, onSelect, zoom, resetS
     let net: any;
 
     (async () => {
-      const vis = await import("vis-network/standalone");
+      const vis = await import("vis-network/peer");
+      const visData = await import("vis-data/peer");
       if (disposed || !containerRef.current) return;
-      const { Network, DataSet } = vis as any;
+      const { Network } = vis as any;
+      const { DataSet } = visData as any;
 
       const nodesDS = new DataSet([]);
       const edgesDS = new DataSet([]);
@@ -60,8 +62,9 @@ export function NetworkCanvas({ nodes, edges, selectedId, onSelect, zoom, resetS
             enabled: true,
             solver: "barnesHut",
             barnesHut: {
-              gravitationalConstant: -3200,
-              springLength: 120,
+              gravitationalConstant: -2000,
+              centralGravity: 0.3,
+              springLength: 95,
               springConstant: 0.04,
               damping: 0.35,
               avoidOverlap: 0.2,
@@ -95,8 +98,8 @@ export function NetworkCanvas({ nodes, edges, selectedId, onSelect, zoom, resetS
         onSelect(id ?? null);
       });
 
-      // Freeze layout once initially stabilized; the toggle re-enables it.
-      net.once("stabilizationIterationsDone", () => {
+      // Auto-freeze physics once the graph settles, to save CPU cycles.
+      net.on("stabilizationIterationsDone", () => {
         net.setOptions({ physics: { enabled: false } });
       });
 

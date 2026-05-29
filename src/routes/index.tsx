@@ -206,6 +206,12 @@ function Index() {
                   <option value={100}>100</option>
                   <option value={200}>200</option>
                 </select>
+                <label className="block mt-2 mb-1">Field of research:</label>
+                <select className="win-input w-full" value={fieldId} onChange={(e) => setFieldId(e.target.value)} disabled={loading}>
+                  {OPENALEX_FIELDS.map((f) => (
+                    <option key={f.id || "any"} value={f.id}>{f.label}</option>
+                  ))}
+                </select>
                 <div className="mt-2 flex gap-1 justify-end">
                   <button className="win-btn" onClick={() => { setQuery(""); }} disabled={loading}>Cancel</button>
                   <button className="win-btn" style={{ fontWeight: 700 }} onClick={handleFetch} disabled={loading}>

@@ -262,10 +262,18 @@ function Index() {
         </div>
 
         {/* Menu bar */}
-        <div className="flex bg-[#c0c0c0] border-b border-[#808080]" style={{ borderTop: "1px solid #ffffff" }}>
+        <div className="flex items-center bg-[#c0c0c0] border-b border-[#808080]" style={{ borderTop: "1px solid #ffffff" }}>
           {["File", "Edit", "Workspace", "Help"].map((m) => (
             <div key={m} className="win-menubtn"><u>{m[0]}</u>{m.slice(1)}</div>
           ))}
+          <button
+            className="win-btn ml-auto mr-1"
+            style={{ fontSize: 10 }}
+            onClick={() => setTheme(theme === "retro" ? "terminal" : "retro")}
+            title="Toggle theme"
+          >
+            {theme === "retro" ? "▮ Terminal" : "▮ Retro"}
+          </button>
         </div>
 
         {/* Body */}

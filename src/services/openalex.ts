@@ -91,7 +91,7 @@ export async function fetchCitationNetwork(
     `&per-page=${perPage}&sort=cited_by_count:desc${filterParam}` +
     `&select=id,title,display_name,publication_year,cited_by_count,doi,referenced_works,authorships`;
 
-  const seedRes = await politeFetch(seedUrl);
+  const seedRes = await politeFetch(seedUrl, apiKey);
   const seedData = (await seedRes.json()) as { results?: OAWork[] };
   const seeds = seedData.results ?? [];
 

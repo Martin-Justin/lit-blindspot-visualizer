@@ -175,7 +175,7 @@ function Index() {
 
         {/* Body */}
         <div className="bg-[#c0c0c0] p-1.5">
-          <div className="grid gap-1.5" style={{ gridTemplateColumns: "260px 1fr 320px" }}>
+          <div className="grid gap-1.5" style={{ gridTemplateColumns: "260px 1fr" }}>
             {/* LEFT TOOL PANE */}
             <section className="win-out p-1.5" style={{ background: "#c0c0c0" }}>
               <div className="win-titlebar inactive" style={{ marginBottom: 6 }}>

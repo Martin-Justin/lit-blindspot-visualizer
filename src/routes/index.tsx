@@ -241,7 +241,10 @@ function Index() {
   );
 
   return (
-    <div className="min-h-screen w-full p-2 sm:p-4" style={{ background: "#008080" }}>
+    <div
+      className={`min-h-screen w-full p-2 sm:p-4 ${theme === "terminal" ? "theme-terminal" : ""}`}
+      style={{ background: theme === "terminal" ? "#07090d" : "#008080" }}
+    >
       <div className="win-out mx-auto" style={{ maxWidth: 1400, padding: 2 }}>
         {/* Title bar */}
         <div className="win-titlebar">

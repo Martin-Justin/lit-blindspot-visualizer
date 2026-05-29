@@ -91,6 +91,11 @@ function Index() {
   const [graphEdges, setGraphEdges] = useState<Edge[]>(mockEdges);
   const [source, setSource] = useState<"mock" | "openalex">("mock");
 
+  // Display filters (Phase 5).
+  const [minCitations, setMinCitations] = useState(0);
+  const [hideRead, setHideRead] = useState(false);
+  const [showIsolated, setShowIsolated] = useState(true);
+
   // Fetch lifecycle
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState<{ stage: string; detail?: string }>({ stage: "" });
@@ -103,13 +108,36 @@ function Index() {
     return () => { document.body.style.cursor = ""; };
   }, [loading]);
 
-  const owned = graphNodes.filter((n) => n.owned);
-  const missed = useMemo(
-    () => graphNodes.filter((n) => !n.owned).sort((a, b) => b.citations - a.citations),
+  const maxCitations = useMemo(
+    () => graphNodes.reduce((m, n) => Math.max(m, n.citations), 0),
     [graphNodes],
   );
+
+  // Apply the display filters to produce the rendered subgraph.
+  const { displayNodes, displayEdges } = useMemo(() => {
+    const keep = new Set<string>();
+    for (const n of graphNodes) {
+      if (n.citations < minCitations) continue;
+      if (hideRead && n.owned) continue;
+      keep.add(n.id);
+    }
+    const edges = graphEdges.filter((e) => keep.has(e.source) && keep.has(e.target));
+    let nodes = graphNodes.filter((n) => keep.has(n.id));
+    if (!showIsolated) {
+      const connected = new Set<string>();
+      for (const e of edges) { connected.add(e.source); connected.add(e.target); }
+      nodes = nodes.filter((n) => connected.has(n.id));
+    }
+    return { displayNodes: nodes, displayEdges: edges };
+  }, [graphNodes, graphEdges, minCitations, hideRead, showIsolated]);
+
+  const owned = displayNodes.filter((n) => n.owned);
+  const missed = useMemo(
+    () => displayNodes.filter((n) => !n.owned).sort((a, b) => b.citations - a.citations),
+    [displayNodes],
+  );
   const topMissed = missed[0];
-  const coverage = graphNodes.length ? Math.round((owned.length / graphNodes.length) * 100) : 0;
+  const coverage = displayNodes.length ? Math.round((owned.length / displayNodes.length) * 100) : 0;
 
   /** Re-match a bib set against a node set and apply owned/unmatched state. */
   const syncBibToGraph = (bib: BibPaper[], nodes: PaperNode[]): PaperNode[] => {
@@ -226,7 +254,7 @@ function Index() {
 
         {/* Body */}
         <div className="bg-[#c0c0c0] p-1.5">
-          <div className="grid gap-1.5" style={{ gridTemplateColumns: "260px 1fr" }}>
+          <div className="grid gap-1.5 grid-cols-1 md:grid-cols-[260px_1fr]">
             {/* LEFT TOOL PANE */}
             <section className="win-out p-1.5" style={{ background: "#c0c0c0" }}>
               <div className="win-titlebar inactive" style={{ marginBottom: 6 }}>
@@ -283,6 +311,41 @@ function Index() {
                 <div className="mt-1 text-[#000080]">Optional — adds api_key to requests</div>
               </fieldset>
 
+              <fieldset className="win-group mt-3" style={fieldsetStyle}>
+                <legend className="px-1 text-[11px]">Display Filters</legend>
+                <label className="block mb-1">
+                  Min. citations: <b style={{ fontFamily: "Courier New, monospace" }}>{formatNum(minCitations)}</b>
+                </label>
+                <input
+                  type="range"
+                  min={0}
+                  max={Math.max(10, maxCitations)}
+                  step={Math.max(1, Math.round(maxCitations / 100))}
+                  value={Math.min(minCitations, maxCitations)}
+                  onChange={(e) => setMinCitations(+e.target.value)}
+                  className="w-full"
+                  style={{ accentColor: "#000080" }}
+                />
+                <div className="flex justify-between text-[10px] text-[#808080]">
+                  <span>0</span><span>{formatNum(maxCitations)}</span>
+                </div>
+                <label className="flex items-center gap-1.5 mt-2 cursor-pointer">
+                  <input type="checkbox" checked={hideRead} onChange={(e) => setHideRead(e.target.checked)} />
+                  <span>Hide read papers (owned)</span>
+                </label>
+                <label className="flex items-center gap-1.5 mt-1 cursor-pointer">
+                  <input type="checkbox" checked={showIsolated} onChange={(e) => setShowIsolated(e.target.checked)} />
+                  <span>Show isolated nodes</span>
+                </label>
+                <div className="mt-2 flex justify-end">
+                  <button
+                    className="win-btn"
+                    onClick={() => { setMinCitations(0); setHideRead(false); setShowIsolated(true); }}
+                  >Reset filters</button>
+                </div>
+              </fieldset>
+
+
               <fieldset className="win-group" style={fieldsetStyle}>
                 <legend className="px-1 text-[11px]">Bibliography (.bib)</legend>
                 <div
@@ -290,12 +353,18 @@ function Index() {
                   style={{
                     minHeight: 80,
                     background: hoverDrop ? "#dfdfdf" : "#ffffff",
-                    backgroundImage:
-                      "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,0.04) 6px 7px)",
+                    backgroundImage: hoverDrop
+                      ? "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,128,0.18) 6px 7px)"
+                      : "repeating-linear-gradient(45deg, transparent 0 6px, rgba(0,0,0,0.04) 6px 7px)",
                     display: "grid",
                     placeItems: "center",
                     padding: 8,
                     cursor: "pointer",
+                    outline: hoverDrop ? "2px dashed #000080" : "1px dashed #808080",
+                    outlineOffset: hoverDrop ? -4 : -2,
+                    boxShadow: hoverDrop
+                      ? "inset 2px 2px 0 #808080, inset -2px -2px 0 #ffffff"
+                      : "none",
                   }}
                   onDragOver={(e) => { e.preventDefault(); setHoverDrop(true); }}
                   onDragLeave={() => setHoverDrop(false)}
@@ -304,7 +373,7 @@ function Index() {
                 >
                   <div className="text-center">
                     <div style={{ fontFamily: "Courier New, monospace", fontSize: 18 }}>[ .BIB ]</div>
-                    <div className="mt-1">Drop Zotero/Mendeley file here</div>
+                    <div className="mt-1">{hoverDrop ? "Release to load…" : "Drop Zotero/Mendeley file here"}</div>
                     <div className="text-[#808080]">or click to browse…</div>
                   </div>
                 </div>
@@ -322,7 +391,7 @@ function Index() {
             <section className="win-out p-1.5 flex flex-col" style={{ background: "#c0c0c0", minHeight: 600 }}>
               <div className="win-titlebar" style={{ marginBottom: 6 }}>
                 <span>Citation Network — {query || "(no query)"} {source === "openalex" ? "· OpenAlex" : "· mock"}</span>
-                <span className="text-[11px] font-normal">{graphNodes.length} nodes · {graphEdges.length} edges</span>
+                <span className="text-[11px] font-normal">{displayNodes.length} / {graphNodes.length} nodes · {displayEdges.length} edges</span>
               </div>
 
               <div className="relative flex-1">
@@ -358,8 +427,8 @@ function Index() {
                 {/* Sunken canvas frame */}
                 <div className="win-in h-full relative" style={{ minHeight: 540, cursor: loading ? "wait" : undefined }}>
                   <NetworkCanvas
-                    nodes={graphNodes}
-                    edges={graphEdges}
+                    nodes={displayNodes}
+                    edges={displayEdges}
                     onSelect={setSelectedId}
                     selectedId={selectedId}
                     zoom={zoom}
@@ -425,14 +494,31 @@ function Index() {
 
             {/* BOTTOM ANALYTICAL HUB (spans full width) */}
             <aside className="win-out p-1.5 flex flex-col gap-2" style={{ background: "#c0c0c0", gridColumn: "1 / -1" }}>
-              <div className="win-titlebar inactive">
+              <div className="win-titlebar inactive flex items-center justify-between">
                 <span>Analytical Hub</span>
+                <button
+                  className="win-btn"
+                  style={{ fontSize: 11, padding: "0 6px" }}
+                  disabled={missed.length === 0}
+                  onClick={() => {
+                    const header = "rank,title,author,year,citations,doi,openalex_id,openalex_url";
+                    const rows = missed.map((p, i) =>
+                      [i + 1, p.title, p.author, p.year, p.citations, p.doi, p.id, `https://openalex.org/${p.id}`]
+                        .map(csvEscape).join(","),
+                    );
+                    const csv = [header, ...rows].join("\n");
+                    const stamp = new Date().toISOString().slice(0, 10);
+                    const safeQuery = (query || "graph").replace(/[^a-z0-9]+/gi, "-").toLowerCase();
+                    downloadFile(`literature-gap-report_${safeQuery}_${stamp}.csv`, "text/csv;charset=utf-8", csv);
+                    toast.success(`Exported ${missed.length} missed hub papers.`);
+                  }}
+                >↧ Export Gap Report (CSV)</button>
               </div>
 
               <StatCard label="Network Coverage Score">
                 <div className="flex items-baseline gap-2">
                   <span style={{ fontSize: 28, fontWeight: 700, fontFamily: "Courier New, monospace" }}>{coverage}%</span>
-                  <span className="text-[#000080]">{owned.length} / {graphNodes.length} owned</span>
+                  <span className="text-[#000080]">{owned.length} / {displayNodes.length} owned</span>
                 </div>
                 <div className="win-in mt-1.5" style={{ height: 14, padding: 1, background: "#fff" }}>
                   <div style={{ width: `${coverage}%`, height: "100%", background: "#000080" }} />
@@ -452,7 +538,7 @@ function Index() {
               </StatCard>
 
               <StatCard label="Total Nodes">
-                <span style={{ fontSize: 22, fontWeight: 700, fontFamily: "Courier New, monospace" }}>{graphNodes.length}</span>
+                <span style={{ fontSize: 22, fontWeight: 700, fontFamily: "Courier New, monospace" }}>{displayNodes.length}</span>
                 <span className="ml-2">in active graph</span>
               </StatCard>
 
@@ -478,17 +564,37 @@ function Index() {
                           >
                             <div className="font-bold leading-tight">{p.title}</div>
                             <div>{p.author} · {p.year} · {formatNum(p.citations)} cit.</div>
-                            <div className="flex gap-1 mt-1">
+                            <div className="flex flex-wrap gap-1 mt-1">
                               <button
                                 className="win-btn"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   const target = p.doi
                                     ? `https://openalex.org/works?filter=doi:${encodeURIComponent(p.doi)}`
-                                    : `https://openalex.org/W${p.id.replace(/^W/, "")}`;
+                                    : `https://openalex.org/${p.id}`;
                                   window.open(target, "_blank", "noopener");
                                 }}
-                              >View on OpenAlex</button>
+                              >OpenAlex details</button>
+                              <button
+                                className="win-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const q = p.doi || `${p.title} ${p.author}`;
+                                  window.open(
+                                    `https://scholar.google.com/scholar?q=${encodeURIComponent(q)}`,
+                                    "_blank",
+                                    "noopener",
+                                  );
+                                }}
+                              >Google Scholar</button>
+                              <button
+                                className="win-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigator.clipboard?.writeText(toBibtex(p));
+                                  toast.success("BibTeX entry copied to clipboard.");
+                                }}
+                              >Copy BibTeX</button>
                               <button
                                 className="win-btn"
                                 onClick={(e) => { e.stopPropagation(); navigator.clipboard?.writeText(p.doi || p.id); }}
@@ -536,6 +642,46 @@ function Index() {
     </div>
   );
 }
+
+// ---------- Phase 5 helpers: BibTeX + CSV report export ----------
+
+/** Build a clean BibTeX @article entry from an OpenAlex-derived paper node. */
+function toBibtex(p: PaperNode): string {
+  const lastName =
+    (p.author || "Unknown").split(/,| and |;/)[0].trim().split(/\s+/).pop() || "Unknown";
+  const key = `${lastName.toLowerCase().replace(/[^a-z0-9]/g, "")}${p.year || ""}_${p.id.toLowerCase()}`;
+  const escape = (s: string) => s.replace(/[{}]/g, "");
+  const lines = [
+    `@article{${key},`,
+    `  title   = {${escape(p.title)}},`,
+    `  author  = {${escape(p.author)}},`,
+    p.year ? `  year    = {${p.year}},` : null,
+    p.doi ? `  doi     = {${p.doi}},` : null,
+    `  note    = {OpenAlex: ${p.id}; ${formatNum(p.citations)} citations}`,
+    `}`,
+  ].filter(Boolean);
+  return lines.join("\n");
+}
+
+const csvEscape = (v: string | number) => {
+  const s = String(v ?? "");
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+
+/** Trigger a browser download for a generated text/CSV/Markdown file. */
+function downloadFile(filename: string, mime: string, content: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+
 
 const fieldsetStyle: React.CSSProperties = {
   border: "1px solid #808080",

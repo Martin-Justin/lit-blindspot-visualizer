@@ -480,7 +480,7 @@ function Index() {
               </StatCard>
 
               <StatCard label="Total Nodes">
-                <span style={{ fontSize: 22, fontWeight: 700, fontFamily: "Courier New, monospace" }}>{graphNodes.length}</span>
+                <span style={{ fontSize: 22, fontWeight: 700, fontFamily: "Courier New, monospace" }}>{displayNodes.length}</span>
                 <span className="ml-2">in active graph</span>
               </StatCard>
 

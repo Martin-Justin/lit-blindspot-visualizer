@@ -460,7 +460,7 @@ function Index() {
               <StatCard label="Network Coverage Score">
                 <div className="flex items-baseline gap-2">
                   <span style={{ fontSize: 28, fontWeight: 700, fontFamily: "Courier New, monospace" }}>{coverage}%</span>
-                  <span className="text-[#000080]">{owned.length} / {graphNodes.length} owned</span>
+                  <span className="text-[#000080]">{owned.length} / {displayNodes.length} owned</span>
                 </div>
                 <div className="win-in mt-1.5" style={{ height: 14, padding: 1, background: "#fff" }}>
                   <div style={{ width: `${coverage}%`, height: "100%", background: "#000080" }} />

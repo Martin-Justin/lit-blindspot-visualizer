@@ -119,15 +119,18 @@ export async function fetchCitationNetwork(
     }
   }
 
+  // Reserve remaining budget so total nodes never exceeds `cap`.
+  const remaining = Math.max(0, cap - nodeMap.size);
   const topRefs = [...refCount.entries()]
     .filter(([id]) => !nodeMap.has(id))
     .sort((a, b) => b[1] - a[1])
-    .slice(0, perPage)
+    .slice(0, remaining)
     .map(([id]) => id);
 
   // OpenAlex `filter=openalex:W1|W2|...` — batch in chunks of 50.
   const CHUNK = 50;
   for (let i = 0; i < topRefs.length; i += CHUNK) {
+    if (nodeMap.size >= cap) break;
     const chunk = topRefs.slice(i, i + CHUNK);
     onProgress?.(
       "Fetching citation links…",
@@ -141,6 +144,7 @@ export async function fetchCitationNetwork(
       const r = await politeFetch(url, apiKey);
       const d = (await r.json()) as { results?: OAWork[] };
       for (const w of d.results ?? []) {
+        if (nodeMap.size >= cap) break;
         const n = toNode(w, "referenced");
         if (!nodeMap.has(n.id)) nodeMap.set(n.id, n);
       }

@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { NetworkCanvas } from "@/components/NetworkCanvas";
 import { mockNodes, mockEdges, mockUnmatched, type PaperNode, type Edge } from "@/lib/mockData";
-import { fetchCitationNetwork, type OAGraph } from "@/services/openalex";
+import { fetchCitationNetwork, OPENALEX_FIELDS, type OAGraph } from "@/services/openalex";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -71,6 +71,7 @@ function Index() {
   const [yearMin, setYearMin] = useState(1960);
   const [yearMax, setYearMax] = useState(2024);
   const [maxPapers, setMaxPapers] = useState(50);
+  const [fieldId, setFieldId] = useState<string>("");
   const [apiKey, setApiKey] = useState("");
   const [tab, setTab] = useState<"missed" | "unmatched">("missed");
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -124,6 +125,7 @@ function Index() {
         yearMax || undefined,
         apiKey || undefined,
         (stage: string, detail?: string) => setProgress({ stage, detail }),
+        fieldId || undefined,
       );
       // Carry over a (mock) "owned" overlay: re-flag any IDs that were owned in
       // the previous graph. Real .bib matching lands in Phase 3.
@@ -203,6 +205,12 @@ function Index() {
                   <option value={50}>50</option>
                   <option value={100}>100</option>
                   <option value={200}>200</option>
+                </select>
+                <label className="block mt-2 mb-1">Field of research:</label>
+                <select className="win-input w-full" value={fieldId} onChange={(e) => setFieldId(e.target.value)} disabled={loading}>
+                  {OPENALEX_FIELDS.map((f) => (
+                    <option key={f.id || "any"} value={f.id}>{f.label}</option>
+                  ))}
                 </select>
                 <div className="mt-2 flex gap-1 justify-end">
                   <button className="win-btn" onClick={() => { setQuery(""); }} disabled={loading}>Cancel</button>

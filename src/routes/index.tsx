@@ -71,6 +71,7 @@ function Index() {
   const [yearMin, setYearMin] = useState(1960);
   const [yearMax, setYearMax] = useState(2024);
   const [maxPapers, setMaxPapers] = useState(50);
+  const [apiKey, setApiKey] = useState("");
   const [tab, setTab] = useState<"missed" | "unmatched">("missed");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [zoom, setZoom] = useState(1);
@@ -121,7 +122,8 @@ function Index() {
         maxPapers,
         yearMin || undefined,
         yearMax || undefined,
-        (stage, detail) => setProgress({ stage, detail }),
+        apiKey || undefined,
+        (stage: string, detail?: string) => setProgress({ stage, detail }),
       );
       // Carry over a (mock) "owned" overlay: re-flag any IDs that were owned in
       // the previous graph. Real .bib matching lands in Phase 3.
@@ -208,6 +210,20 @@ function Index() {
                     {loading ? "Fetching…" : "Fetch Graph"}
                   </button>
                 </div>
+              </fieldset>
+
+              <fieldset className="win-group" style={fieldsetStyle}>
+                <legend className="px-1 text-[11px]">Configure API</legend>
+                <label className="block mb-1">OpenAlex API Key:</label>
+                <input
+                  type="password"
+                  className="win-input w-full"
+                  value={apiKey}
+                  onChange={(e) => setApiKey(e.target.value)}
+                  placeholder="Leave empty for public calls"
+                  disabled={loading}
+                />
+                <div className="mt-1 text-[#000080]">Optional — adds api_key to requests</div>
               </fieldset>
 
               <fieldset className="win-group" style={fieldsetStyle}>

@@ -1,10 +1,6 @@
 // OpenAlex citation network service.
-// Browsers strip the User-Agent header, but OpenAlex's "polite pool"
-// also accepts a `mailto` query param — we send both for robustness.
 
 const BASE_URL = "https://api.openalex.org/works";
-const MAILTO = "your-email-placeholder@domain.com";
-const POLITE_UA = "LiteratureBlindSpotsProject/1.0 (mailto:your-email-placeholder@domain.com)";
 
 export type OAGraphNode = {
   id: string;
@@ -28,18 +24,10 @@ export type ProgressFn = (stage: string, detail?: string) => void;
 
 const stripPrefix = (id: string) => id.replace("https://openalex.org/", "");
 
-function buildPolite(url: string): string {
-  return url.includes("?") ? `${url}&mailto=${MAILTO}` : `${url}?mailto=${MAILTO}`;
-}
 
-async function politeFetch(url: string): Promise<Response> {
-  const res = await fetch(buildPolite(url), {
-    headers: {
-      Accept: "application/json",
-      // Browsers will silently drop this; harmless in non-browser envs.
-      "User-Agent": POLITE_UA,
-    },
-  });
+async function politeFetch(url: string, apiKey?: string): Promise<Response> {
+  const urlWithKey = apiKey ? `${url}${url.includes("?") ? "&" : "?"}api_key=${encodeURIComponent(apiKey)}` : url;
+  const res = await fetch(urlWithKey);
   if (!res.ok) {
     throw new Error(`OpenAlex request failed (${res.status} ${res.statusText})`);
   }
@@ -83,6 +71,7 @@ export async function fetchCitationNetwork(
   maxPapers: number,
   startYear?: number,
   endYear?: number,
+  apiKey?: string,
   onProgress?: ProgressFn,
 ): Promise<OAGraph> {
   if (!query.trim()) throw new Error("Please enter a search query.");
@@ -102,7 +91,7 @@ export async function fetchCitationNetwork(
     `&per-page=${perPage}&sort=cited_by_count:desc${filterParam}` +
     `&select=id,title,display_name,publication_year,cited_by_count,doi,referenced_works,authorships`;
 
-  const seedRes = await politeFetch(seedUrl);
+  const seedRes = await politeFetch(seedUrl, apiKey);
   const seedData = (await seedRes.json()) as { results?: OAWork[] };
   const seeds = seedData.results ?? [];
 
@@ -146,7 +135,7 @@ export async function fetchCitationNetwork(
       `&per-page=${chunk.length}` +
       `&select=id,title,display_name,publication_year,cited_by_count,doi,referenced_works,authorships`;
     try {
-      const r = await politeFetch(url);
+      const r = await politeFetch(url, apiKey);
       const d = (await r.json()) as { results?: OAWork[] };
       for (const w of d.results ?? []) {
         const n = toNode(w, "referenced");

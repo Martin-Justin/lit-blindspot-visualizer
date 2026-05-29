@@ -22,6 +22,38 @@ export type OAGraph = {
 
 export type ProgressFn = (stage: string, detail?: string) => void;
 
+// OpenAlex fields (top-level research areas) for primary_topic.field.id filter.
+// Reference: https://api.openalex.org/fields
+export const OPENALEX_FIELDS: { id: string; label: string }[] = [
+  { id: "", label: "Any field" },
+  { id: "11", label: "Agricultural & Biological Sciences" },
+  { id: "12", label: "Arts & Humanities" },
+  { id: "13", label: "Biochemistry, Genetics & Molecular Biology" },
+  { id: "14", label: "Business, Management & Accounting" },
+  { id: "15", label: "Chemical Engineering" },
+  { id: "16", label: "Chemistry" },
+  { id: "17", label: "Computer Science" },
+  { id: "18", label: "Decision Sciences" },
+  { id: "19", label: "Earth & Planetary Sciences" },
+  { id: "20", label: "Economics, Econometrics & Finance" },
+  { id: "21", label: "Energy" },
+  { id: "22", label: "Engineering" },
+  { id: "23", label: "Environmental Science" },
+  { id: "24", label: "Immunology & Microbiology" },
+  { id: "25", label: "Materials Science" },
+  { id: "26", label: "Mathematics" },
+  { id: "27", label: "Medicine" },
+  { id: "28", label: "Neuroscience" },
+  { id: "29", label: "Nursing" },
+  { id: "30", label: "Pharmacology, Toxicology & Pharmaceutics" },
+  { id: "31", label: "Physics & Astronomy" },
+  { id: "32", label: "Psychology" },
+  { id: "33", label: "Social Sciences" },
+  { id: "34", label: "Veterinary" },
+  { id: "35", label: "Dentistry" },
+  { id: "36", label: "Health Professions" },
+];
+
 const stripPrefix = (id: string) => id.replace("https://openalex.org/", "");
 
 

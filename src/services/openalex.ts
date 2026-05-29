@@ -32,12 +32,11 @@ function buildPolite(url: string): string {
   return url.includes("?") ? `${url}&mailto=${MAILTO}` : `${url}?mailto=${MAILTO}`;
 }
 
-async function politeFetch(url: string): Promise<Response> {
-  const res = await fetch(buildPolite(url), {
+async function politeFetch(url: string, apiKey?: string): Promise<Response> {
+  const urlWithKey = apiKey ? `${url}${url.includes("?") ? "&" : "?"}api_key=${encodeURIComponent(apiKey)}` : url;
+  const res = await fetch(urlWithKey, {
     headers: {
       Accept: "application/json",
-      // Browsers will silently drop this; harmless in non-browser envs.
-      "User-Agent": POLITE_UA,
     },
   });
   if (!res.ok) {
@@ -83,6 +82,7 @@ export async function fetchCitationNetwork(
   maxPapers: number,
   startYear?: number,
   endYear?: number,
+  apiKey?: string,
   onProgress?: ProgressFn,
 ): Promise<OAGraph> {
   if (!query.trim()) throw new Error("Please enter a search query.");

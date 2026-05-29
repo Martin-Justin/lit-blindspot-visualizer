@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { NetworkCanvas } from "@/components/NetworkCanvas";
-import { mockNodes, mockEdges, mockUnmatched, type PaperNode, type Edge } from "@/lib/mockData";
+import { mockNodes, mockEdges, type PaperNode, type Edge } from "@/lib/mockData";
 import { fetchCitationNetwork, OPENALEX_FIELDS, type OAGraph } from "@/services/openalex";
+import { parseBibtex, matchBibToGraph, type BibPaper } from "@/services/bibtex";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -79,7 +81,9 @@ function Index() {
   const [resetSignal, setResetSignal] = useState(0);
   const [physics, setPhysics] = useState(false);
   const [hoverDrop, setHoverDrop] = useState(false);
-  const [bibName, setBibName] = useState<string | null>("zotero-library.bib");
+  const [bibName, setBibName] = useState<string | null>(null);
+  const [bibEntries, setBibEntries] = useState<BibPaper[]>([]);
+  const [unmatchedBib, setUnmatchedBib] = useState<BibPaper[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Graph state — starts from mock data, replaced by OpenAlex fetch.
@@ -107,10 +111,56 @@ function Index() {
   const topMissed = missed[0];
   const coverage = graphNodes.length ? Math.round((owned.length / graphNodes.length) * 100) : 0;
 
-  const onFile = (file?: File) => {
+  /** Re-match a bib set against a node set and apply owned/unmatched state. */
+  const syncBibToGraph = (bib: BibPaper[], nodes: PaperNode[]): PaperNode[] => {
+    if (bib.length === 0) {
+      setUnmatchedBib([]);
+      return nodes.map((n) => ({ ...n, owned: false }));
+    }
+    const { matchedIds, unmatched } = matchBibToGraph(bib, nodes);
+    setUnmatchedBib(unmatched);
+    return nodes.map((n) => ({ ...n, owned: matchedIds.has(n.id) }));
+  };
+
+  const onFile = async (file?: File) => {
     if (!file) return;
     setBibName(file.name);
+    try {
+      const text = await file.text();
+      const parsed = parseBibtex(text);
+      if (parsed.length === 0) {
+        toast.error("No BibTeX entries found in that file.");
+        setBibEntries([]);
+        setUnmatchedBib([]);
+        setGraphNodes((prev) => prev.map((n) => ({ ...n, owned: false })));
+        return;
+      }
+      setBibEntries(parsed);
+      let matched = 0;
+      setGraphNodes((prev) => {
+        const next = syncBibToGraph(parsed, prev);
+        matched = next.filter((n) => n.owned).length;
+        return next;
+      });
+      // Defer toast so the matched count above is final.
+      queueMicrotask(() => {
+        toast.success(
+          `Loaded ${parsed.length} papers from bibliography. Matched ${matched} with current graph.`,
+        );
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to read .bib file.");
+    }
   };
+
+  const clearBib = () => {
+    setBibName(null);
+    setBibEntries([]);
+    setUnmatchedBib([]);
+    setGraphNodes((prev) => prev.map((n) => ({ ...n, owned: false })));
+  };
+
+
 
   const handleFetch = async () => {
     setError(null);
@@ -127,11 +177,10 @@ function Index() {
         (stage: string, detail?: string) => setProgress({ stage, detail }),
         fieldId || undefined,
       );
-      // Carry over a (mock) "owned" overlay: re-flag any IDs that were owned in
-      // the previous graph. Real .bib matching lands in Phase 3.
-      const ownedIds = new Set(graphNodes.filter((n) => n.owned).map((n) => n.id));
-      const { nodes, edges } = layoutGraph(graph, ownedIds);
-      setGraphNodes(nodes);
+      const { nodes, edges } = layoutGraph(graph, new Set());
+      // Re-match the loaded bibliography against the new node set.
+      const matchedNodes = syncBibToGraph(bibEntries, nodes);
+      setGraphNodes(matchedNodes);
       setGraphEdges(edges);
       setSource("openalex");
       setZoom(1);
@@ -263,7 +312,7 @@ function Index() {
                 {bibName && (
                   <div className="mt-2 flex items-center justify-between win-in-thin px-1.5 py-1">
                     <span>📄 {bibName}</span>
-                    <button className="win-btn" onClick={() => setBibName(null)}>Clear</button>
+                    <button className="win-btn" onClick={clearBib}>Clear</button>
                   </div>
                 )}
               </fieldset>
@@ -410,7 +459,7 @@ function Index() {
               <div className="flex-1 flex flex-col mt-1">
                 <div className="flex pl-1">
                   <div className="win-tab" data-active={tab === "missed"} onClick={() => setTab("missed")}>Missed Hubs ({missed.length})</div>
-                  <div className="win-tab" data-active={tab === "unmatched"} onClick={() => setTab("unmatched")}>Unmatched ({mockUnmatched.length})</div>
+                  <div className="win-tab" data-active={tab === "unmatched"} onClick={() => setTab("unmatched")}>Unmatched ({unmatchedBib.length})</div>
                 </div>
                 <div className="win-out flex-1" style={{ background: "#c0c0c0", padding: 4, minHeight: 200 }}>
                   <div className="win-in win-scroll" style={{ background: "#fff", height: 260, overflow: "auto" }}>
@@ -450,11 +499,18 @@ function Index() {
                       </ul>
                     ) : (
                       <ul>
-                        {mockUnmatched.map((p) => (
-                          <li key={p.id} className="px-1.5 py-1" style={{ borderBottom: "1px dotted #c0c0c0" }}>
-                            <div className="font-bold leading-tight">{p.title}</div>
-                            <div>{p.author} · {p.year}</div>
-                            <div className="text-[#808080]">Not present in active OpenAlex graph.</div>
+                        {unmatchedBib.length === 0 && (
+                          <li className="px-1.5 py-2 text-[#808080]">
+                            Drop a .bib file to see entries with no match in the active graph.
+                          </li>
+                        )}
+                        {unmatchedBib.map((p) => (
+                          <li key={p.key} className="px-1.5 py-1" style={{ borderBottom: "1px dotted #c0c0c0" }}>
+                            <div className="font-bold leading-tight">{p.title || "(untitled)"}</div>
+                            <div>{p.author || "Unknown"}{p.year ? ` · ${p.year}` : ""}</div>
+                            <div className="text-[#808080]">
+                              {p.doi ? `DOI ${p.doi} · ` : ""}Not present in active OpenAlex graph.
+                            </div>
                           </li>
                         ))}
                       </ul>
@@ -471,7 +527,7 @@ function Index() {
               {loading ? `⌛ ${progress.stage}${progress.detail ? " · " + progress.detail : ""}` : error ? "✕ Error — see dialog." : "Ready."}
             </StatusCell>
             <StatusCell>Bib matches: {owned.length}</StatusCell>
-            <StatusCell>Unmatched: {mockUnmatched.length}</StatusCell>
+            <StatusCell>Unmatched: {unmatchedBib.length}</StatusCell>
             <StatusCell>OpenAlex: {loading ? "● querying" : error ? "● error" : source === "openalex" ? "● live" : "○ mock"}</StatusCell>
             <StatusCell>Zoom: {Math.round(zoom * 100)}%</StatusCell>
           </div>

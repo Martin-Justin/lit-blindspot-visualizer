@@ -88,6 +88,7 @@ function Index() {
     setQuery(buildQuery(keywords, joiner));
   }, [keywords, joiner]);
   const [theme, setTheme] = useState<"retro" | "terminal">("retro");
+  const [helpOpen, setHelpOpen] = useState<boolean>(false);
   const [yearMin, setYearMin] = useState(1960);
   const [yearMax, setYearMax] = useState(2024);
   const [maxPapers, setMaxPapers] = useState(50);
@@ -262,10 +263,57 @@ function Index() {
         </div>
 
         {/* Menu bar */}
-        <div className="flex items-center bg-[#c0c0c0] border-b border-[#808080]" style={{ borderTop: "1px solid #ffffff" }}>
-          {["File", "Edit", "Workspace", "Help"].map((m) => (
+        <div className="flex items-center bg-[#c0c0c0] border-b border-[#808080] relative" style={{ borderTop: "1px solid #ffffff" }}>
+          {["File", "Edit", "Workspace"].map((m) => (
             <div key={m} className="win-menubtn"><u>{m[0]}</u>{m.slice(1)}</div>
           ))}
+          <div
+            className="win-menubtn"
+            onClick={() => setHelpOpen((v) => !v)}
+            style={{ cursor: "pointer" }}
+          ><u>H</u>elp</div>
+          {helpOpen && (
+            <div
+              className="win-out absolute z-50"
+              style={{ top: "100%", left: 0, marginTop: 2, width: 460, background: "#c0c0c0", padding: 0 }}
+            >
+              <div className="win-titlebar">
+                <span>About — Blind Spots</span>
+                <button
+                  className="win-btn"
+                  style={{ width: 18, height: 16, padding: 0, fontSize: 10 }}
+                  onClick={() => setHelpOpen(false)}
+                  aria-label="Close"
+                >✕</button>
+              </div>
+              <div className="p-2">
+                <pre
+                  className="win-in p-2 whitespace-pre-wrap"
+                  style={{ fontFamily: "inherit", fontSize: 11, lineHeight: 1.45, margin: 0 }}
+                >{`Author: Martin
+
+Origin: Developed during the AI4DH 2026 Workshop
+        "Vibe Coding for Humanities and Social Sciences"
+        (https://ai4dh.eu/2026/04/20/vibe-coding-workshop-for-humanities-and-social-sciences/)
+
+Built With:
+- Lovable (lovable.dev)
+- Antigravity CLI (Google DeepMind agentic coding assistant)
+
+------------------------------------------------------------
+
+System Overview:
+
+This tool constructs a topic-specific citation network using the
+OpenAlex API and cross-references it client-side against your
+uploaded Zotero/Mendeley .bib bibliography, visualizing personal
+literature coverage and identifying high-priority "blind spots."`}</pre>
+                <div className="flex justify-end mt-2">
+                  <button className="win-btn" onClick={() => setHelpOpen(false)}>OK</button>
+                </div>
+              </div>
+            </div>
+          )}
           <button
             className="win-btn ml-auto mr-1"
             style={{ fontSize: 10 }}

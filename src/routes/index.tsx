@@ -499,11 +499,18 @@ function Index() {
                       </ul>
                     ) : (
                       <ul>
-                        {mockUnmatched.map((p) => (
-                          <li key={p.id} className="px-1.5 py-1" style={{ borderBottom: "1px dotted #c0c0c0" }}>
-                            <div className="font-bold leading-tight">{p.title}</div>
-                            <div>{p.author} · {p.year}</div>
-                            <div className="text-[#808080]">Not present in active OpenAlex graph.</div>
+                        {unmatchedBib.length === 0 && (
+                          <li className="px-1.5 py-2 text-[#808080]">
+                            Drop a .bib file to see entries with no match in the active graph.
+                          </li>
+                        )}
+                        {unmatchedBib.map((p) => (
+                          <li key={p.key} className="px-1.5 py-1" style={{ borderBottom: "1px dotted #c0c0c0" }}>
+                            <div className="font-bold leading-tight">{p.title || "(untitled)"}</div>
+                            <div>{p.author || "Unknown"}{p.year ? ` · ${p.year}` : ""}</div>
+                            <div className="text-[#808080]">
+                              {p.doi ? `DOI ${p.doi} · ` : ""}Not present in active OpenAlex graph.
+                            </div>
                           </li>
                         ))}
                       </ul>

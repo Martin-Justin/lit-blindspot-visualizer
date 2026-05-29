@@ -600,6 +600,46 @@ function Index() {
   );
 }
 
+// ---------- Phase 5 helpers: BibTeX + CSV report export ----------
+
+/** Build a clean BibTeX @article entry from an OpenAlex-derived paper node. */
+function toBibtex(p: PaperNode): string {
+  const lastName =
+    (p.author || "Unknown").split(/,| and |;/)[0].trim().split(/\s+/).pop() || "Unknown";
+  const key = `${lastName.toLowerCase().replace(/[^a-z0-9]/g, "")}${p.year || ""}_${p.id.toLowerCase()}`;
+  const escape = (s: string) => s.replace(/[{}]/g, "");
+  const lines = [
+    `@article{${key},`,
+    `  title   = {${escape(p.title)}},`,
+    `  author  = {${escape(p.author)}},`,
+    p.year ? `  year    = {${p.year}},` : null,
+    p.doi ? `  doi     = {${p.doi}},` : null,
+    `  note    = {OpenAlex: ${p.id}; ${formatNum(p.citations)} citations}`,
+    `}`,
+  ].filter(Boolean);
+  return lines.join("\n");
+}
+
+const csvEscape = (v: string | number) => {
+  const s = String(v ?? "");
+  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+};
+
+/** Trigger a browser download for a generated text/CSV/Markdown file. */
+function downloadFile(filename: string, mime: string, content: string) {
+  const blob = new Blob([content], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+
+
 const fieldsetStyle: React.CSSProperties = {
   border: "1px solid #808080",
   borderTop: "1px solid #808080",

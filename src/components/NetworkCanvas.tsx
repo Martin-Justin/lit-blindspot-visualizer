@@ -146,10 +146,24 @@ export function NetworkCanvas({ nodes, edges, selectedId, onSelect, zoom, resetS
 
     const visEdges = edges.map((e, i) => ({ id: `e${i}`, from: e.source, to: e.target }));
 
+    // Detect a graph "load" (node-set identity changed) so we can re-stabilize.
+    const idsKey = nodes.map((n) => n.id).sort().join("|");
+    const prevKey = (s as any)._idsKey as string | undefined;
+    const graphChanged = idsKey !== prevKey;
+    (s as any)._idsKey = idsKey;
+
     s.nodesDS.clear();
     s.nodesDS.add(visNodes);
     s.edgesDS.clear();
     s.edgesDS.add(visEdges);
+
+    if (graphChanged && visNodes.length > 0) {
+      // Stabilize the freshly loaded graph, then freeze physics to save CPU.
+      try {
+        s.network.setOptions({ physics: { enabled: true } });
+        s.network.stabilize();
+      } catch { /* noop */ }
+    }
 
     if (selectedId) {
       try { s.network.selectNodes([selectedId], false); } catch { /* noop */ }

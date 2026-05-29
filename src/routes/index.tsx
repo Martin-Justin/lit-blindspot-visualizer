@@ -1,8 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { toast } from "sonner";
 import { NetworkCanvas } from "@/components/NetworkCanvas";
-import { mockNodes, mockEdges, mockUnmatched, type PaperNode, type Edge } from "@/lib/mockData";
+import { mockNodes, mockEdges, type PaperNode, type Edge } from "@/lib/mockData";
 import { fetchCitationNetwork, OPENALEX_FIELDS, type OAGraph } from "@/services/openalex";
+import { parseBibtex, matchBibToGraph, type BibPaper } from "@/services/bibtex";
 
 export const Route = createFileRoute("/")({
   head: () => ({

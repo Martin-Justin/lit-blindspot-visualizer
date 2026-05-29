@@ -69,7 +69,24 @@ function layoutGraph(graph: OAGraph, ownedIds: Set<string>): { nodes: PaperNode[
 }
 
 function Index() {
+  const [keywords, setKeywords] = useState<string[]>(["Epistemic Bias in Science"]);
+  const [joiner, setJoiner] = useState<"AND" | "OR">("AND");
   const [query, setQuery] = useState("Epistemic Bias in Science");
+
+  // Build OpenAlex search string from keyword chips. Quotes multi-word terms,
+  // wraps each term in parentheses, and joins with the chosen boolean operator.
+  // Parentheses are natively supported by OpenAlex, e.g. ("a" OR "b") AND "c".
+  function buildQuery(terms: string[], op: "AND" | "OR"): string {
+    const cleaned = terms.map((t) => t.trim()).filter(Boolean);
+    if (cleaned.length === 0) return "";
+    if (cleaned.length === 1) return cleaned[0];
+    return cleaned.map((t) => (/\s/.test(t) ? `("${t.replace(/"/g, "")}")` : `(${t})`)).join(` ${op} `);
+  }
+
+  // Keep `query` in sync with the chip builder so the raw input still reflects what gets sent.
+  useEffect(() => {
+    setQuery(buildQuery(keywords, joiner));
+  }, [keywords, joiner]);
   const [yearMin, setYearMin] = useState(1960);
   const [yearMax, setYearMax] = useState(2024);
   const [maxPapers, setMaxPapers] = useState(50);
@@ -263,14 +280,57 @@ function Index() {
 
               <fieldset className="win-group mb-3" style={fieldsetStyle}>
                 <legend className="px-1 text-[11px]">OpenAlex Query</legend>
-                <label className="block mb-1">Topic:</label>
+                <label className="block mb-1">Keywords:</label>
+                {keywords.map((kw, i) => (
+                  <div key={i} className="flex items-center gap-1 mb-1">
+                    <input
+                      className="win-input flex-1 min-w-0"
+                      value={kw}
+                      onChange={(e) => {
+                        const next = [...keywords];
+                        next[i] = e.target.value;
+                        setKeywords(next);
+                      }}
+                      onKeyDown={(e) => e.key === "Enter" && !loading && handleFetch()}
+                      disabled={loading}
+                      placeholder='e.g. "peer disagreement"'
+                    />
+                    <button
+                      className="win-btn"
+                      style={{ padding: "0 6px" }}
+                      onClick={() => setKeywords(keywords.length > 1 ? keywords.filter((_, j) => j !== i) : [""])}
+                      disabled={loading}
+                      title="Remove keyword"
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+                <div className="flex items-center justify-between gap-1 mt-1">
+                  <button className="win-btn" onClick={() => setKeywords([...keywords, ""])} disabled={loading}>
+                    + Add keyword
+                  </button>
+                  <div className="flex items-center gap-2 text-[11px]">
+                    <label className="flex items-center gap-1">
+                      <input type="radio" name="joiner" checked={joiner === "AND"} onChange={() => setJoiner("AND")} disabled={loading} />
+                      AND
+                    </label>
+                    <label className="flex items-center gap-1">
+                      <input type="radio" name="joiner" checked={joiner === "OR"} onChange={() => setJoiner("OR")} disabled={loading} />
+                      OR
+                    </label>
+                  </div>
+                </div>
+                <label className="block mt-2 mb-1">Effective query (editable):</label>
                 <input
                   className="win-input w-full"
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && !loading && handleFetch()}
                   disabled={loading}
+                  title="Advanced: edit raw OpenAlex search string. Supports AND, OR, NOT, quotes, and ( )."
                 />
+                <div className="text-[10px] text-gray-600 mt-1">Tip: use quotes for phrases. Parentheses are supported, e.g. <code>("a" OR "b") AND "c"</code>.</div>
                 <label className="block mt-2 mb-1">Year range:</label>
                 <div className="flex items-center gap-1">
                   <input type="number" className="win-input" style={{ width: 60 }} value={yearMin} onChange={(e) => setYearMin(+e.target.value)} disabled={loading} />

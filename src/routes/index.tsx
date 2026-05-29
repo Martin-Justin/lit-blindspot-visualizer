@@ -81,7 +81,9 @@ function Index() {
   const [resetSignal, setResetSignal] = useState(0);
   const [physics, setPhysics] = useState(false);
   const [hoverDrop, setHoverDrop] = useState(false);
-  const [bibName, setBibName] = useState<string | null>("zotero-library.bib");
+  const [bibName, setBibName] = useState<string | null>(null);
+  const [bibEntries, setBibEntries] = useState<BibPaper[]>([]);
+  const [unmatchedBib, setUnmatchedBib] = useState<BibPaper[]>([]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   // Graph state — starts from mock data, replaced by OpenAlex fetch.
@@ -109,10 +111,56 @@ function Index() {
   const topMissed = missed[0];
   const coverage = graphNodes.length ? Math.round((owned.length / graphNodes.length) * 100) : 0;
 
-  const onFile = (file?: File) => {
+  /** Re-match a bib set against a node set and apply owned/unmatched state. */
+  const syncBibToGraph = (bib: BibPaper[], nodes: PaperNode[]): PaperNode[] => {
+    if (bib.length === 0) {
+      setUnmatchedBib([]);
+      return nodes.map((n) => ({ ...n, owned: false }));
+    }
+    const { matchedIds, unmatched } = matchBibToGraph(bib, nodes);
+    setUnmatchedBib(unmatched);
+    return nodes.map((n) => ({ ...n, owned: matchedIds.has(n.id) }));
+  };
+
+  const onFile = async (file?: File) => {
     if (!file) return;
     setBibName(file.name);
+    try {
+      const text = await file.text();
+      const parsed = parseBibtex(text);
+      if (parsed.length === 0) {
+        toast.error("No BibTeX entries found in that file.");
+        setBibEntries([]);
+        setUnmatchedBib([]);
+        setGraphNodes((prev) => prev.map((n) => ({ ...n, owned: false })));
+        return;
+      }
+      setBibEntries(parsed);
+      let matched = 0;
+      setGraphNodes((prev) => {
+        const next = syncBibToGraph(parsed, prev);
+        matched = next.filter((n) => n.owned).length;
+        return next;
+      });
+      // Defer toast so the matched count above is final.
+      queueMicrotask(() => {
+        toast.success(
+          `Loaded ${parsed.length} papers from bibliography. Matched ${matched} with current graph.`,
+        );
+      });
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to read .bib file.");
+    }
   };
+
+  const clearBib = () => {
+    setBibName(null);
+    setBibEntries([]);
+    setUnmatchedBib([]);
+    setGraphNodes((prev) => prev.map((n) => ({ ...n, owned: false })));
+  };
+
+
 
   const handleFetch = async () => {
     setError(null);
